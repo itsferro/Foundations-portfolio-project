@@ -17,7 +17,9 @@ router = APIRouter(
 # delivery services file path
 path = "delivery_services/"
 
-def delivery_service(conn, data):
+
+@router.post("/")
+def create(conn, data):
     """
     creates deleviry service row in the delivery services table.
     """
@@ -25,14 +27,16 @@ def delivery_service(conn, data):
     print(query)
 
 
-def read_all_delivery_services():
+@router.get("/")
+def read_all(conn):
     """
     fetches all rows from the delivery services table.
     """
     pass
 
 
-def update_delivery_service():
+@router.put("/{id}")
+def update(id, conn, data):
     """
     updates a deleviry service row by id
     in the delivery services table.
@@ -40,7 +44,8 @@ def update_delivery_service():
     pass
 
 
-def delete_delivery_service():
+@router.delete("/{id}")
+def delete(id, conn):
     """
     deletes a delivery service row bu id
     from the delivery services table.

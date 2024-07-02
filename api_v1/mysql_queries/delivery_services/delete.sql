@@ -1,2 +1,2 @@
 DELETE FROM delivery_services
-WHERE id=?;
+WHERE id=%s;

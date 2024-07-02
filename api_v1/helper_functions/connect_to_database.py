@@ -1,78 +1,60 @@
 #!/usr/bin/python3
 """
+contains the fuctions for dealing with the batabase session.
 """
 import mysql.connector
 import time
 
 
-# database credentials dictionary
-"""
-db_creds = {
-        "host": "127.0.0.1",
-        "user": "feras",
-        "password": "",
-        "time_zone": "+02:00"
-        }
-"""
+def get_session():
+    """
+    starts a new session by initiates a connection to the database
+    and yields the cursor,
+    then commits changes and closes everything.
+    """
+    db_creds = {
+            "host": "127.0.0.1",
+            "user": "feras",
+            "password": "",
+            "database": "compactecom_MVP_dev",
+            "time_zone": "+02:00"
+            }
 
-
-def get_new_connection(db_creds):
     while True:
         try:
-            conn = mysql.connector.connect(**db_creds)
-            print("database connected")
-            return conn
+            session = mysql.connector.connect(**db_creds)
+            print("______________________________________________")
+            print("_____database connected : session started_____\n")
             break
         except Exception as error:
             print("connection to database attempt **Failed**")
             print(f"Error: {error}")
             time.sleep(2)
 
-"""
-# the initialization of the database connection
-old_conn = get_new_connection(db_creds)
-"""
-
-
-def get_cursor(conn):
-    """
-    """
     try:
-        cursor = conn.cursor(dictionary=True)
+        cursor = session.cursor(dictionary=True, buffered=True)
         print("cursor created")
-        return cursor
     except Exception as error:
         print("cursor couldn't be created **Failed**")
         print(error)
 
-
-def get_new_cursor(conn):
-    cursor = get_cursor(old_conn)
     try:
         yield cursor
     finally:
+        session.commit()
+        print("session commited")
         cursor.close()
         print("cursor closed")
+        session.close()
+        print("\n______database connected : session ended______")
+        print("______________________________________________")
 
 
 if __name__ == "__main__":
     """
     """
     print("Hi!")
-    # database credentials dictionary
-    db_creds = {
-            "host": "127.0.0.1",
-            "user": "feras",
-            "password": "",
-            "time_zone": "+02:00"
-            }
 
-    # the initialization of the database connection
-    old_conn = get_new_connection(db_creds)
-
-    x = get_new_cursor(old_conn)
-    for i in x:
-        print(f"this is the cursor: {i}")
-
-    old_conn.close()
-    print("database disconnected")
+    cursor = get_session()
+    for i in cursor:
+        pass

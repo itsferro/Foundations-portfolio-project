@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+"""
+
 
 def get_queries(query_file):
     """

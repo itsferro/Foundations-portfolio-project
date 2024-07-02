@@ -7,6 +7,7 @@ delivery services table CRUD functions.
 from fastapi import Response, APIRouter, Depends, HTTPException
 from helper_functions.get_queries_from_file import get_queries
 from helper_functions.connect_to_database import get_session
+from pydantic_models.delivery_services import delivery_services
 import mysql.connector
 import json
 
@@ -21,7 +22,7 @@ path = "delivery_services/"
 
 
 @router.post("/")
-def create(data, db = Depends(get_session)):
+def create(data: delivery_services, db = Depends(get_session)):
     """
     creates deleviry service row in the delivery services table.
     """
@@ -66,7 +67,7 @@ def read(id: int = None, db = Depends(get_session)):
 
 
 @router.put("/{id}")
-def update(id, data, db = Depends(get_session)):
+def update(id: int, data: delivery_services, db = Depends(get_session)):
     """
     updates a deleviry service row by id
     in the delivery services table.
@@ -93,7 +94,7 @@ def update(id, data, db = Depends(get_session)):
 
 
 @router.delete("/{id}")
-def delete(id, db: int = Depends(get_session)):
+def delete(id: int, db = Depends(get_session)):
     """
     deletes a delivery service row bu id
     from the delivery services table.

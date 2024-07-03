@@ -4,10 +4,11 @@ delivery services table CRUD functions.
 """
 
 
-from fastapi import Response, APIRouter, Depends, HTTPException
+from types import Union
+from fastapi import Response, APIRouter, Depends, status, Response, HTTPException
 from helper_functions.get_queries_from_file import get_queries
 from helper_functions.connect_to_database import get_session
-from pydantic_models.delivery_services import delivery_services
+from pydantic_models.delivery_services import delivery_services_in
 import mysql.connector
 import json
 
@@ -21,38 +22,33 @@ router = APIRouter(
 path = "delivery_services/"
 
 
-@router.post("/")
-def create(data: delivery_services, db = Depends(get_session)):
+@router.post("/", status_code=status.HTTP_201_CREATED)
+def create(data: delivery_services_in, db = Depends(get_session)):
     """
     creates deleviry service row in the delivery services table.
     """
     query = get_queries(path + "create.sql")
     print(f"\nquery:\n{query}")
     print(f"data:\n{data}\n")
-    dict_data = json.loads(data)
-    values = []
-    values.append(dict_data.get("name"))
-    values.append(dict_data.get("desc"))
-    values.append(dict_data.get("note"))
-    db.execute(query, tuple(values))
+    db.execute(query, data.model_dump())
+    data.id = db.lastrowid
     print(db)
     print()
     return ({
         "message": query,
-        "data_added": dict_data,
-        "values": values
+        "data_added": data,
         })
 
 
 @router.get("/")
-def read(id: int = None, db = Depends(get_session)):
+def read(id: Union[int, None], db = Depends(get_session)):
     """
     fetches from the delivery services table.
     """
     if id:
         query = get_queries(path + "read_one_by_id.sql")
         print(f"\nquery:\n{query}")
-        db.execute(query, (id,))
+        db.execute(query, {"id": id})
         row = db.fetchall()
         if row:
             return {"message": row}
@@ -67,7 +63,7 @@ def read(id: int = None, db = Depends(get_session)):
 
 
 @router.put("/{id}")
-def update(id: int, data: delivery_services, db = Depends(get_session)):
+def update(id: int, data: delivery_services_in, db = Depends(get_session)):
     """
     updates a deleviry service row by id
     in the delivery services table.
@@ -76,20 +72,15 @@ def update(id: int, data: delivery_services, db = Depends(get_session)):
     print(f"\nquery:\n{query}")
     print(f"id:\n{id}")
     print(f"\ndata:\n{data}\n")
-    dict_data = json.loads(data)
-    values = []
-    values.append(dict_data.get("name"))
-    values.append(dict_data.get("desc"))
-    values.append(dict_data.get("note"))
-    values.append(id)
-    db.execute(query, tuple(values))
+    data.id = id
+    db.execute(query, data.model_dump())
     print(db)
     print()
     return ({
         "message": query,
         "id": id,
-        "data_updated": dict_data,
-        "values": values
+        "data_updated": data.model_dump(),
+        "values": data.to_tuple()
         })
 
 
@@ -102,5 +93,11 @@ def delete(id: int, db = Depends(get_session)):
     query = get_queries(path + "delete.sql")
     print(f"\nquery:\n{query}")
     print(f"id:\n{id}\n")
-    db.execute(query, (id,))
-    return {"message": query, "id": id}
+    try:
+        db.execute(query, {"id": id})
+        db.execute("SELECT ROW_COUNT()")
+        effected_tables = db.fetchone()
+        return {"message": query, "id": id, "effected_tables": effected_tables}
+    except Exception as error:
+        print(error)
+        return {"message": "404 not fount"}

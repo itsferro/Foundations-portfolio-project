@@ -4,13 +4,11 @@ delivery services table CRUD functions.
 """
 
 
-from types import Union
+from typing import Union
 from fastapi import Response, APIRouter, Depends, status, Response, HTTPException
 from helper_functions.get_queries_from_file import get_queries
 from helper_functions.connect_to_database import get_session
 from pydantic_models.delivery_services import delivery_services_in
-import mysql.connector
-import json
 
 
 router = APIRouter(
@@ -30,7 +28,12 @@ def create(data: delivery_services_in, db = Depends(get_session)):
     query = get_queries(path + "create.sql")
     print(f"\nquery:\n{query}")
     print(f"data:\n{data}\n")
-    db.execute(query, data.model_dump())
+    try:
+        db.execute(query, data.model_dump())
+    except Exception as error:
+        print(error)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail=f"deleviry service with the name ({data.delivery_service_name}) already exists")
     data.id = db.lastrowid
     print(db)
     print()
@@ -41,7 +44,7 @@ def create(data: delivery_services_in, db = Depends(get_session)):
 
 
 @router.get("/")
-def read(id: Union[int, None], db = Depends(get_session)):
+def read(id: Union[int, None] = None, db = Depends(get_session)):
     """
     fetches from the delivery services table.
     """
@@ -53,7 +56,8 @@ def read(id: Union[int, None], db = Depends(get_session)):
         if row:
             return {"message": row}
         else:
-            return {"message": "404 not found"}
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"deleviry service with the id ({id}) doesn't exists")
     else:
         query = get_queries(path + "read_all.sql")
         print(f"\nquery:\n{query}")
@@ -63,7 +67,7 @@ def read(id: Union[int, None], db = Depends(get_session)):
 
 
 @router.put("/{id}")
-def update(id: int, data: delivery_services_in, db = Depends(get_session)):
+def update(data: delivery_services_in, id: int, db = Depends(get_session)):
     """
     updates a deleviry service row by id
     in the delivery services table.
@@ -76,12 +80,18 @@ def update(id: int, data: delivery_services_in, db = Depends(get_session)):
     db.execute(query, data.model_dump())
     print(db)
     print()
-    return ({
-        "message": query,
-        "id": id,
-        "data_updated": data.model_dump(),
-        "values": data.to_tuple()
-        })
+    db.execute("SELECT ROW_COUNT()")
+    effected_rows = db.fetchone()
+    if effected_rows["ROW_COUNT()"]:
+        return ({
+            "message": query,
+            "operation": db.fetchall(),
+            "data_conn": data.model_dump(),
+            "values": data.to_tuple()
+            })
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"deleviry service with the id ({id}) doesn't exists")
 
 
 @router.delete("/{id}")
@@ -93,11 +103,11 @@ def delete(id: int, db = Depends(get_session)):
     query = get_queries(path + "delete.sql")
     print(f"\nquery:\n{query}")
     print(f"id:\n{id}\n")
-    try:
-        db.execute(query, {"id": id})
-        db.execute("SELECT ROW_COUNT()")
-        effected_tables = db.fetchone()
-        return {"message": query, "id": id, "effected_tables": effected_tables}
-    except Exception as error:
-        print(error)
-        return {"message": "404 not fount"}
+    db.execute(query, {"id": id})
+    db.execute("SELECT ROW_COUNT()")
+    effected_rows = db.fetchone()
+    if effected_rows["ROW_COUNT()"]:
+        return {"message": query, "id": id, "effected_rows": effected_rows}
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"deleviry service with the id ({id}) doesn't exists")

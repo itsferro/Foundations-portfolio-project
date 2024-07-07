@@ -5,6 +5,9 @@ contains the fuctions for dealing with the batabase session.
 import mysql.connector
 import time
 
+from mysql.connector.abstracts import MySQLConnectionAbstract, MySQLCursorAbstract
+from mysql.connector.pooling import PooledMySQLConnection
+
 
 def get_session():
     """
@@ -12,7 +15,7 @@ def get_session():
     and yields the cursor,
     then commits changes and closes everything.
     """
-    db_creds = {
+    db_creds: dict[str, str] = {
             "host": "127.0.0.1",
             "user": "feras",
             "password": "",

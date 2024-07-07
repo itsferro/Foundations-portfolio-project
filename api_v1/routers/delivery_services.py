@@ -77,21 +77,26 @@ def update(data: delivery_services_in, id: int, db = Depends(get_session)):
     print(f"id:\n{id}")
     print(f"\ndata:\n{data}\n")
     data.id = id
-    db.execute(query, data.model_dump())
-    print(db)
-    print()
-    db.execute("SELECT ROW_COUNT()")
-    effected_rows = db.fetchone()
-    if effected_rows["ROW_COUNT()"]:
-        return ({
-            "message": query,
-            "operation": db.fetchall(),
-            "data_conn": data.model_dump(),
-            "values": data.to_tuple()
-            })
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"deleviry service with the id ({id}) doesn't exists")
+    try:
+        db.execute(query, data.model_dump())
+        print(db)
+        print()
+        db.execute("SELECT ROW_COUNT()")
+        effected_rows = db.fetchone()
+        if effected_rows["ROW_COUNT()"]:
+            return ({
+                "message": query,
+                "operation": db.fetchall(),
+                "data_conn": data.model_dump(),
+                "values": data.to_tuple()
+                })
+        else:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"deleviry service with the id ({id}) doesn't exists")
+    except Exception as error:
+        print(error)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail=f"deleviry service with the name ({data.delivery_service_name}) already exists")
 
 
 @router.delete("/{id}")
